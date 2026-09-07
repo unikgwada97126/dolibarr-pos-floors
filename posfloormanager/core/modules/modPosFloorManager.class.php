@@ -118,7 +118,11 @@ class modPosFloorManager extends DolibarrModules
 			'titre' => 'PosFloorManagerMenu',
 			'mainmenu' => 'takepos',
 			'leftmenu' => 'posfloormanager',
-			'url' => '/posfloormanager/admin/floors_tables.php',
+			// dol_buildpath() (pas un chemin en dur) : indispensable pour que le
+			// lien fonctionne que le module soit installé dans htdocs/custom/
+			// (cas normal) ou directement sous htdocs/ - sinon 404 garanti dans
+			// le 1er cas puisque le fichier réel est sous /custom/posfloormanager/...
+			'url' => dol_buildpath('/posfloormanager/admin/floors_tables.php', 1),
 			'langs' => 'posfloormanager@posfloormanager',
 			'position' => 1100,
 			'enabled' => 'isModEnabled("posfloormanager")',

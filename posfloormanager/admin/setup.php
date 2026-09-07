@@ -49,7 +49,7 @@ print $langs->trans("PosFloorManagerHowItWorks");
 print '</div><br>';
 
 print '<div class="center">';
-print '<a class="butAction" href="'.DOL_URL_ROOT.'/posfloormanager/admin/floors_tables.php">'.$langs->trans("PosFloorManagerOpenScreen").'</a>';
+print '<a class="butAction" href="'.dol_buildpath('/posfloormanager/admin/floors_tables.php', 1).'">'.$langs->trans("PosFloorManagerOpenScreen").'</a>';
 print '</div>';
 
 llxFooter();
