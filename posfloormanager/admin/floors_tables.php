@@ -6,15 +6,17 @@
  *              l'écran natif takepos/floors.php.
  */
 
-// Le module est installé dans htdocs/custom/posfloormanager/ : depuis
-// admin/, il faut remonter 3 niveaux pour atteindre main.inc.php. Gère aussi
-// le cas d'un module posé directement sous htdocs/ (hors custom/).
+// Remontée relative à l'emplacement réel du fichier (__DIR__), sans supposer
+// une profondeur fixe : fonctionne que le module soit dans htdocs/custom/
+// (profondeur 3), directement sous htdocs/ (profondeur 2), ou toute autre
+// disposition (ex: alt roots multi-niveaux).
 $res = 0;
-if (!$res && file_exists("../../main.inc.php")) {
-	$res = @include "../../main.inc.php";
-}
-if (!$res && file_exists("../../../main.inc.php")) {
-	$res = @include "../../../main.inc.php";
+$tmpdir = __DIR__;
+for ($i = 0; $i < 6 && !$res; $i++) {
+	$tmpdir = dirname($tmpdir);
+	if (file_exists($tmpdir.'/main.inc.php')) {
+		$res = @include $tmpdir.'/main.inc.php';
+	}
 }
 if (!$res) {
 	die("Include of main fails");
