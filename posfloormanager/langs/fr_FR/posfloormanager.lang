@@ -1,0 +1,40 @@
+Module100450Name=Gestion Salles &amp; Tables POS
+Module100450Desc=Corrige la numérotation des tables et étages du module TakePos : unicité par étage, numérotation automatique, écran de gestion des salles
+
+PosFloorManagerMenu=Salles &amp; Tables
+PosFloorManagerTitle=Gestion des salles, étages et tables du POS
+PosFloorManagerSetup=Configuration - Gestion Salles &amp; Tables POS
+PosFloorManagerSetupDesc=Ce module corrige la numérotation des tables et des étages du module TakePos natif, sans modifier aucun fichier du core.
+PosFloorManagerHowItWorks=Fonctionnement : à l'activation, ce module installe 2 triggers sur la table technique de TakePos (llx_takepos_floor_tables) et remplace la contrainte d'unicité globale des numéros de table par une contrainte par étage. Toute table créée ou renommée - que ce soit depuis l'écran natif TakePos (crayon "Editer" du plan de salle) ou depuis l'écran de ce module - respecte désormais une numérotation propre, séquentielle et unique PAR ÉTAGE.
+PosFloorManagerOpenScreen=Ouvrir l'écran de gestion
+
+PosFloorManagerIntro=Gérez ici le nom de vos salles/étages et la numérotation de vos tables. Le plan de salle (positionnement visuel, glisser-déposer) reste géré depuis l'écran natif TakePos ("Editer" dans le module POS) ; cet écran garantit que la numérotation reste propre quel que soit l'endroit où vous créez ou renommez une table.
+
+PosFloorManagerFloorNum=Étage
+PosFloorManagerFloorName=Nom de la salle
+PosFloorManagerNbTables=Nb tables
+PosFloorManagerNewFloorName=Nouvelle salle/étage
+PosFloorManagerFloorNameExample=ex: Salle principale, Terrasse, Étage 1
+PosFloorManagerAddFloor=Créer la salle
+PosFloorManagerFloorCreated=Salle créée
+PosFloorManagerFloorRenamed=Salle renommée
+PosFloorManagerFloorDeleted=Salle supprimée
+PosFloorManagerErrorFloorNotEmpty=Impossible de supprimer : cette salle contient encore %s table(s). Supprimez ou déplacez d'abord les tables.
+PosFloorManagerErrorNameRequired=Le nom est obligatoire
+
+PosFloorManagerTablesOfFloor=Tables de l'étage %s
+PosFloorManagerTableNum=Numéro de table
+PosFloorManagerAddTable=Ajouter une table
+PosFloorManagerBulkAddTables=Créer plusieurs tables
+PosFloorManagerTableCreated=Table créée
+PosFloorManagerTablesCreated=%s table(s) créée(s)
+PosFloorManagerTableRenamed=Table renommée
+PosFloorManagerTableDeleted=Table supprimée
+PosFloorManagerErrorDuplicateLabel=Le numéro "%s" est déjà utilisé sur cet étage
+PosFloorManagerErrorTableOccupied=Impossible de supprimer : une commande/facture est ouverte sur cette table
+PosFloorManagerOccupied=Occupée
+PosFloorManagerFree=Libre
+
+PosFloorManagerRenumberFloor=Renuméroter cet étage (1, 2, 3...)
+PosFloorManagerConfirmRenumber=Cette action renumérote toutes les tables de cet étage de 1 à N. Continuer ?
+PosFloorManagerFloorRenumbered=%s table(s) renumérotée(s)

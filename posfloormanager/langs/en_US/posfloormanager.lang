@@ -1,0 +1,40 @@
+Module100450Name=POS Floor &amp; Table Manager
+Module100450Desc=Fixes TakePos table/floor numbering: per-floor uniqueness, automatic numbering, floor management screen
+
+PosFloorManagerMenu=Floors &amp; Tables
+PosFloorManagerTitle=POS floors, rooms and tables management
+PosFloorManagerSetup=Setup - POS Floor &amp; Table Manager
+PosFloorManagerSetupDesc=This module fixes table/floor numbering of the native TakePos module, without modifying any core file.
+PosFloorManagerHowItWorks=How it works: on activation, this module installs 2 triggers on the TakePos technical table (llx_takepos_floor_tables) and replaces the native global table-number uniqueness constraint with a per-floor constraint. Any table created or renamed - whether from the native TakePos screen or from this module's screen - now gets clean, sequential, per-floor numbering.
+PosFloorManagerOpenScreen=Open management screen
+
+PosFloorManagerIntro=Manage your floor/room names and table numbering here. The visual floor plan (drag and drop) is still managed from the native TakePos "Edit" screen; this screen ensures numbering stays clean wherever a table is created or renamed.
+
+PosFloorManagerFloorNum=Floor
+PosFloorManagerFloorName=Room name
+PosFloorManagerNbTables=Tables
+PosFloorManagerNewFloorName=New room/floor
+PosFloorManagerFloorNameExample=e.g. Main room, Terrace, 1st floor
+PosFloorManagerAddFloor=Create room
+PosFloorManagerFloorCreated=Room created
+PosFloorManagerFloorRenamed=Room renamed
+PosFloorManagerFloorDeleted=Room deleted
+PosFloorManagerErrorFloorNotEmpty=Cannot delete: this room still has %s table(s). Delete or move tables first.
+PosFloorManagerErrorNameRequired=Name is required
+
+PosFloorManagerTablesOfFloor=Tables of floor %s
+PosFloorManagerTableNum=Table number
+PosFloorManagerAddTable=Add a table
+PosFloorManagerBulkAddTables=Create several tables
+PosFloorManagerTableCreated=Table created
+PosFloorManagerTablesCreated=%s table(s) created
+PosFloorManagerTableRenamed=Table renamed
+PosFloorManagerTableDeleted=Table deleted
+PosFloorManagerErrorDuplicateLabel=Number "%s" is already used on this floor
+PosFloorManagerErrorTableOccupied=Cannot delete: an open order/invoice exists on this table
+PosFloorManagerOccupied=Occupied
+PosFloorManagerFree=Free
+
+PosFloorManagerRenumberFloor=Renumber this floor (1, 2, 3...)
+PosFloorManagerConfirmRenumber=This will renumber all tables of this floor from 1 to N. Continue?
+PosFloorManagerFloorRenumbered=%s table(s) renumbered
