@@ -77,6 +77,19 @@ de la table puis **Enregistrer**.
   en salle principale ET "Table 1" en terrasse) — c'est volontaire, c'est ce
   qui manquait dans TakePos natif.
 
+### Activer / désactiver une table (marquer "hors service")
+
+Chaque table a son propre interrupteur, à côté du statut libre/occupée.
+Cliquer dessus la marque grisée dans cet écran (ex: table cassée, en
+réparation) — utile pour s'en souvenir sans la supprimer.
+
+⚠️ **Important** : ce statut est une information pour VOUS, dans cet écran de
+gestion uniquement. Il **n'empêche pas** la table d'apparaître dans l'écran de
+caisse TakePos — le module ne peut pas s'accrocher à cet écran natif (aucun
+point d'intégration disponible côté Dolibarr). Si vous voulez qu'une table
+hors service disparaisse vraiment de la caisse, il faut la supprimer (section
+suivante) ou la déplacer temporairement hors des salles actives.
+
 ### Déplacer une table vers une autre salle
 
 Chaque table a un menu déroulant "Déplacer vers" listant toutes les autres
