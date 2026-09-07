@@ -50,20 +50,26 @@ Cliquer sur l'icône interrupteur à côté de la salle. Une salle désactivée
 reste visible dans l'historique mais peut être masquée du choix courant
 (utile pour une terrasse fermée l'hiver, par exemple).
 
-## 4. Ajouter des tables à une salle
+## 4. Gestion des tables — tout se passe sous chaque salle
 
-1. Cliquer sur le **numéro** dans la colonne "Nb tables" de la salle voulue
-   (ou sur son nom) pour afficher le détail de ses tables.
-2. Deux façons d'ajouter :
-   - **Ajouter une table** : crée une table, elle reçoit automatiquement le
-     prochain numéro libre de cet étage (1, 2, 3...).
-   - **Créer plusieurs tables** : indiquer un nombre (max 50) et cliquer sur
-     le bouton — utile pour initialiser une salle de 12 tables en un clic.
+**La liste des tables de chaque salle s'affiche directement dessous, pour
+toutes les salles en même temps** — il n'y a rien à cliquer pour la faire
+apparaître, vous n'avez qu'à descendre dans la page. Sous chaque salle, vous
+avez : la liste de ses tables (numéro, statut libre/occupée), et 3 boutons
+d'action (ajouter une table, en créer plusieurs, renuméroter).
 
-## 5. Renommer une table
+### Ajouter des tables
 
-Dans le détail d'une salle, modifier le numéro dans le champ à côté de la
-table puis **Enregistrer**.
+Sous la liste des tables de la salle voulue :
+- **Ajouter une table** : crée une table, elle reçoit automatiquement le
+  prochain numéro libre de cet étage (1, 2, 3...).
+- **Créer plusieurs tables** : indiquer un nombre (max 50) et cliquer sur le
+  bouton — utile pour initialiser une salle de 12 tables en un clic.
+
+### Renommer une table
+
+Dans la liste des tables de la salle, modifier le numéro dans le champ à côté
+de la table puis **Enregistrer**.
 
 - Si le numéro choisi est déjà utilisé **sur cet étage**, un message d'erreur
   s'affiche et rien n'est modifié.
@@ -71,20 +77,32 @@ table puis **Enregistrer**.
   en salle principale ET "Table 1" en terrasse) — c'est volontaire, c'est ce
   qui manquait dans TakePos natif.
 
-## 6. Supprimer une table ou une salle
+### Déplacer une table vers une autre salle
 
-- **Table** : bouton poubelle dans le détail de la salle. Refusé si une
-  commande/facture est ouverte sur cette table (icône rouge "Occupée") —
+Chaque table a un menu déroulant "Déplacer vers" listant toutes les autres
+salles, avec un bouton **Déplacer**. La table change d'étage instantanément.
+
+- Si le numéro de la table existe déjà sur la salle de destination, le
+  déplacement est refusé avec un message clair — renommez la table d'abord
+  (numéro libre), puis déplacez-la.
+- Une table avec une commande ouverte peut être déplacée sans problème (la
+  commande reste liée à la bonne table, peu importe l'étage).
+
+### Supprimer une table ou une salle
+
+- **Table** : bouton poubelle dans la liste des tables de la salle. Refusé si
+  une commande/facture est ouverte sur cette table (icône rouge "Occupée") —
   fermez d'abord la commande en caisse.
-- **Salle** : bouton poubelle dans le tableau du haut, visible seulement si
-  la salle ne contient plus aucune table.
+- **Salle** : bouton poubelle dans l'en-tête de la salle, visible seulement si
+  elle ne contient plus aucune table (déplacez ou supprimez ses tables
+  d'abord).
 
-## 7. Réparer une numérotation déjà en désordre
+## 5. Réparer une numérotation déjà en désordre
 
 Si une salle a des numéros incohérents (avant l'installation du module, par
-exemple), ouvrez son détail et cliquez sur **Renuméroter cet étage** : toutes
-ses tables sont renommées 1, 2, 3... dans l'ordre de création. Une
-confirmation est demandée avant d'agir (irréversible en un clic, mais sans
+exemple), utilisez le bouton **Renuméroter cet étage** sous sa liste de
+tables : toutes ses tables sont renommées 1, 2, 3... dans l'ordre de création.
+Une confirmation est demandée avant d'agir (irréversible en un clic, mais sans
 danger : ça ne touche que les numéros affichés, pas les commandes en cours).
 
 ## Problèmes fréquents
@@ -92,11 +110,12 @@ danger : ça ne touche que les numéros affichés, pas les commandes en cours).
 - **"Le numéro X est déjà utilisé sur cet étage"** → normal, choisissez un
   autre numéro ou consultez la liste des tables de cet étage pour voir
   lesquels sont pris.
+- **Déplacement refusé** → le numéro existe déjà sur la salle de destination ;
+  renommez la table avant de la déplacer.
 - **Impossible de supprimer une table** → une commande est ouverte dessus ;
   terminez-la en caisse avant de supprimer.
 - **Impossible de supprimer une salle** → elle contient encore des tables ;
-  supprimez-les ou déplacez-les d'abord (il n'y a pas de "déplacer" — créez la
-  table sur la bonne salle et supprimez l'ancienne).
+  déplacez-les vers une autre salle ou supprimez-les d'abord.
 
 ## Installation (pour l'administrateur système)
 

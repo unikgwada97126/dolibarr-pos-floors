@@ -304,6 +304,39 @@ if ($action == 'renametable' && $user->hasRight('posfloormanager', 'manage')) {
 	}
 }
 
+if ($action == 'movetable' && $user->hasRight('posfloormanager', 'manage')) {
+	$targetfloor = GETPOSTINT('targetfloor');
+	if ($targetfloor <= 0) {
+		setEventMessages($langs->trans("PosFloorManagerErrorNameRequired"), null, 'errors');
+	} elseif ($targetfloor == $currentfloor) {
+		setEventMessages($langs->trans("PosFloorManagerErrorSameFloor"), null, 'errors');
+	} else {
+		// Contrôle explicite AVANT la requête, comme pour le renommage : le
+		// trigger DB bloquera aussi en dernier recours si ce contrôle est
+		// contourné, mais le message est plus clair ici.
+		$sql = "SELECT tt.label FROM ".MAIN_DB_PREFIX."takepos_floor_tables tt WHERE tt.rowid = ".((int) $rowid);
+		$resqllabel = $db->query($sql);
+		$objlabel = $resqllabel ? $db->fetch_object($resqllabel) : null;
+		$currentlabel = $objlabel ? $objlabel->label : '';
+
+		$sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."takepos_floor_tables";
+		$sql .= " WHERE floor = ".((int) $targetfloor)." AND entity IN (".getEntity('takepos').")";
+		$sql .= " AND label = '".$db->escape($currentlabel)."'";
+		$resql = $db->query($sql);
+		if ($resql && $db->num_rows($resql) > 0) {
+			setEventMessages($langs->trans("PosFloorManagerErrorDuplicateLabelOnTarget", $currentlabel, $targetfloor), null, 'errors');
+		} else {
+			$sql = "UPDATE ".MAIN_DB_PREFIX."takepos_floor_tables SET floor = ".((int) $targetfloor);
+			$sql .= " WHERE rowid = ".((int) $rowid);
+			if (!$db->query($sql)) {
+				setEventMessages($db->lasterror(), null, 'errors');
+			} else {
+				setEventMessages($langs->trans("PosFloorManagerTableMoved", $targetfloor), null, 'mesgs');
+			}
+		}
+	}
+}
+
 if ($action == 'deletetable' && $user->hasRight('posfloormanager', 'manage')) {
 	if (pfmTableIsOccupied($db, $rowid)) {
 		setEventMessages($langs->trans("PosFloorManagerErrorTableOccupied"), null, 'errors');
@@ -351,17 +384,32 @@ print '<span class="opacitymedium">'.$langs->trans("PosFloorManagerIntro").'</sp
 // --- Liste des salles/étages : fusion auto TakePos natif + personnalisation ---
 $floors = pfmListFloors($db, $conf, $langs);
 
-print '<table class="noborder centpercent">';
-print '<tr class="liste_titre">';
-print '<td>'.$langs->trans("PosFloorManagerFloorNum").'</td>';
-print '<td>'.$langs->trans("PosFloorManagerFloorName").'</td>';
-print '<td class="center">'.$langs->trans("PosFloorManagerNbTables").'</td>';
-print '<td class="center">'.$langs->trans("Status").'</td>';
-print '<td class="right"></td>';
-print '</tr>';
+print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="marginbottomonly">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="action" value="addfloor">';
+print $langs->trans("PosFloorManagerNewFloorName").' : ';
+print '<input type="text" name="newfloorname" size="24" placeholder="'.$langs->trans("PosFloorManagerFloorNameExample").'">';
+print ' <button type="submit" class="butAction">'.$langs->trans("PosFloorManagerAddFloor").'</button>';
+print '</form>';
 
+print '<br>';
+
+// --- Chaque salle affichée avec la gestion COMPLETE de ses tables juste en
+// dessous : rien de caché derriere un clic ou un filtre d'URL separe.
 foreach ($floors as $floornum => $f) {
 	$nbtables = pfmCountTables($db, $floornum);
+
+	print '<div class="tabBar" style="margin-bottom:25px;">';
+
+	// --- En-tete de la salle ---
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre">';
+	print '<td>'.$langs->trans("PosFloorManagerFloorNum").'</td>';
+	print '<td>'.$langs->trans("PosFloorManagerFloorName").'</td>';
+	print '<td class="center">'.$langs->trans("PosFloorManagerNbTables").'</td>';
+	print '<td class="center">'.$langs->trans("Status").'</td>';
+	print '<td class="right"></td>';
+	print '</tr>';
 	print '<tr class="oddeven">';
 	print '<td>'.$langs->trans("Floor").' '.((int) $floornum).'</td>';
 	print '<td>';
@@ -373,7 +421,7 @@ foreach ($floors as $floornum => $f) {
 	print ' <button type="submit" class="button smallpaddingimp">'.$langs->trans("Save").'</button>';
 	print '</form>';
 	print '</td>';
-	print '<td class="center"><a href="'.$_SERVER["PHP_SELF"].'?floor='.((int) $floornum).'">'.$nbtables.'</a></td>';
+	print '<td class="center">'.$nbtables.'</td>';
 	print '<td class="center">';
 	print '<a href="'.$_SERVER["PHP_SELF"].'?action=toggleactivefloor&token='.newToken().'&floornum='.((int) $floornum).'">';
 	print $f['active'] ? img_picto($langs->trans("Active"), 'switch_on') : img_picto($langs->trans("Disabled"), 'switch_off');
@@ -385,90 +433,101 @@ foreach ($floors as $floornum => $f) {
 	}
 	print '</td>';
 	print '</tr>';
-}
+	print '</table>';
 
-print '<tr class="oddeven">';
-print '<td colspan="5">';
-print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
-print '<input type="hidden" name="token" value="'.newToken().'">';
-print '<input type="hidden" name="action" value="addfloor">';
-print $langs->trans("PosFloorManagerNewFloorName").' : ';
-print '<input type="text" name="newfloorname" size="24" placeholder="'.$langs->trans("PosFloorManagerFloorNameExample").'">';
-print ' <button type="submit" class="butAction">'.$langs->trans("PosFloorManagerAddFloor").'</button>';
-print '</form>';
-print '</td>';
-print '</tr>';
-print '</table>';
-
-print '<br><br>';
-
-// --- Détail des tables de l'étage sélectionné ---
-if ($currentfloor > 0) {
-	print load_fiche_titre($langs->trans("PosFloorManagerTablesOfFloor", $currentfloor), '', 'table');
-
+	// --- Tables de CETTE salle, juste en dessous ---
 	$sql = "SELECT rowid, label, leftpos, toppos FROM ".MAIN_DB_PREFIX."takepos_floor_tables";
-	$sql .= " WHERE floor = ".((int) $currentfloor)." AND entity IN (".getEntity('takepos').")";
+	$sql .= " WHERE floor = ".((int) $floornum)." AND entity IN (".getEntity('takepos').")";
 	$sql .= " ORDER BY CAST(label AS UNSIGNED) ASC, label ASC";
 	$resql = $db->query($sql);
 
 	print '<table class="noborder centpercent">';
 	print '<tr class="liste_titre">';
-	print '<td>'.$langs->trans("PosFloorManagerTableNum").'</td>';
+	print '<td style="padding-left:20px;">'.$langs->trans("PosFloorManagerTableNum").'</td>';
 	print '<td class="center">'.$langs->trans("Status").'</td>';
+	print '<td>'.$langs->trans("PosFloorManagerMoveTo").'</td>';
 	print '<td class="right"></td>';
 	print '</tr>';
 
-	if ($resql) {
+	if ($resql && $db->num_rows($resql) > 0) {
 		while ($obj = $db->fetch_object($resql)) {
 			$occupied = pfmTableIsOccupied($db, $obj->rowid);
 			print '<tr class="oddeven">';
-			print '<td>';
-			print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'?floor='.((int) $currentfloor).'" class="inline-block">';
+			print '<td style="padding-left:20px;">';
+			print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block">';
 			print '<input type="hidden" name="token" value="'.newToken().'">';
 			print '<input type="hidden" name="action" value="renametable">';
 			print '<input type="hidden" name="rowid" value="'.((int) $obj->rowid).'">';
-			print '<input type="hidden" name="floor" value="'.((int) $currentfloor).'">';
+			print '<input type="hidden" name="floor" value="'.((int) $floornum).'">';
 			print '<input type="text" name="label" value="'.dol_escape_htmltag($obj->label).'" size="6" maxlength="10">';
 			print ' <button type="submit" class="button smallpaddingimp">'.$langs->trans("Save").'</button>';
 			print '</form>';
 			print '</td>';
 			print '<td class="center">'.($occupied ? img_picto($langs->trans("PosFloorManagerOccupied"), 'statut4') : img_picto($langs->trans("PosFloorManagerFree"), 'statut6')).'</td>';
+			print '<td>';
+			if (count($floors) > 1) {
+				print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block">';
+				print '<input type="hidden" name="token" value="'.newToken().'">';
+				print '<input type="hidden" name="action" value="movetable">';
+				print '<input type="hidden" name="rowid" value="'.((int) $obj->rowid).'">';
+				print '<input type="hidden" name="floor" value="'.((int) $floornum).'">';
+				print '<select name="targetfloor" class="flat">';
+				foreach ($floors as $tfloornum => $tf) {
+					if ($tfloornum == $floornum) {
+						continue;
+					}
+					print '<option value="'.((int) $tfloornum).'">'.dol_escape_htmltag($tf['label']).'</option>';
+				}
+				print '</select>';
+				print ' <button type="submit" class="button smallpaddingimp">'.$langs->trans("PosFloorManagerMoveTable").'</button>';
+				print '</form>';
+			}
+			print '</td>';
 			print '<td class="right">';
 			if (!$occupied) {
-				print '<a href="'.$_SERVER["PHP_SELF"].'?floor='.((int) $currentfloor).'&action=deletetable&token='.newToken().'&rowid='.((int) $obj->rowid).'" onclick="return confirm(\''.dol_escape_js($langs->trans("ConfirmDelete")).'\');">'.img_picto($langs->trans("Delete"), 'delete').'</a>';
+				print '<a href="'.$_SERVER["PHP_SELF"].'?action=deletetable&token='.newToken().'&rowid='.((int) $obj->rowid).'" onclick="return confirm(\''.dol_escape_js($langs->trans("ConfirmDelete")).'\');">'.img_picto($langs->trans("Delete"), 'delete').'</a>';
 			}
 			print '</td>';
 			print '</tr>';
 		}
+	} else {
+		print '<tr class="oddeven"><td style="padding-left:20px;" colspan="4"><span class="opacitymedium">'.$langs->trans("PosFloorManagerNoTableYet").'</span></td></tr>';
 	}
 	print '</table>';
 
-	print '<br>';
-	print '<div class="center">';
+	// --- Actions de la salle : ajouter / créer en lot / renuméroter ---
+	print '<div style="padding:8px 0 0 20px;">';
 
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'?floor='.((int) $currentfloor).'" class="inline-block marginrightonly">';
+	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block marginrightonly">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
 	print '<input type="hidden" name="action" value="addtable">';
-	print '<input type="hidden" name="floor" value="'.((int) $currentfloor).'">';
+	print '<input type="hidden" name="floor" value="'.((int) $floornum).'">';
 	print '<button type="submit" class="butAction">'.$langs->trans("PosFloorManagerAddTable").'</button>';
 	print '</form>';
 
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'?floor='.((int) $currentfloor).'" class="inline-block marginrightonly">';
+	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block marginrightonly">';
 	print '<input type="hidden" name="token" value="'.newToken().'">';
 	print '<input type="hidden" name="action" value="bulkaddtables">';
-	print '<input type="hidden" name="floor" value="'.((int) $currentfloor).'">';
+	print '<input type="hidden" name="floor" value="'.((int) $floornum).'">';
 	print '<input type="number" name="nbtocreate" value="6" min="1" max="50" style="width:60px">';
 	print ' <button type="submit" class="butAction">'.$langs->trans("PosFloorManagerBulkAddTables").'</button>';
 	print '</form>';
 
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'?floor='.((int) $currentfloor).'" class="inline-block">';
-	print '<input type="hidden" name="token" value="'.newToken().'">';
-	print '<input type="hidden" name="action" value="renumberfloor">';
-	print '<input type="hidden" name="floor" value="'.((int) $currentfloor).'">';
-	print '<button type="submit" class="butActionDelete" onclick="return confirm(\''.dol_escape_js($langs->trans("PosFloorManagerConfirmRenumber")).'\');">'.$langs->trans("PosFloorManagerRenumberFloor").'</button>';
-	print '</form>';
+	if ($nbtables > 0) {
+		print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+		print '<input type="hidden" name="action" value="renumberfloor">';
+		print '<input type="hidden" name="floor" value="'.((int) $floornum).'">';
+		print '<button type="submit" class="butActionDelete" onclick="return confirm(\''.dol_escape_js($langs->trans("PosFloorManagerConfirmRenumber")).'\');">'.$langs->trans("PosFloorManagerRenumberFloor").'</button>';
+		print '</form>';
+	}
 
 	print '</div>';
+	print '</div>';
+}
+
+if (empty($floors)) {
+	print '<div class="opacitymedium">'.$langs->trans("PosFloorManagerNoFloorYet").'</div>';
 }
 
 llxFooter();
