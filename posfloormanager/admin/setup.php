@@ -4,7 +4,21 @@
  *  \brief      Page de configuration du module PosFloorManager
  */
 
-require '../../main.inc.php';
+// Le module est installé dans htdocs/custom/posfloormanager/ : depuis
+// admin/, il faut remonter 3 niveaux (admin -> posfloormanager -> custom -> htdocs)
+// pour atteindre main.inc.php. Gère aussi le cas d'un module posé directement
+// sous htdocs/ (hors custom/), moins courant mais possible.
+$res = 0;
+if (!$res && file_exists("../../main.inc.php")) {
+	$res = @include "../../main.inc.php";
+}
+if (!$res && file_exists("../../../main.inc.php")) {
+	$res = @include "../../../main.inc.php";
+}
+if (!$res) {
+	die("Include of main fails");
+}
+
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 
 /**
@@ -21,6 +35,7 @@ if (!$user->admin) {
 }
 
 $action = GETPOST('action', 'aZ09');
+$backtopage = GETPOST('backtopage', 'alpha');
 
 llxHeader('', $langs->trans("PosFloorManagerSetup"));
 

@@ -226,11 +226,26 @@ class modPosFloorManager extends DolibarrModules
 			$obj = $this->db->fetch_object($resql);
 			$alreadymigrated = ($obj && $obj->nb > 0);
 		}
-
-		if (!$alreadymigrated) {
-			$this->db->query("ALTER TABLE ".MAIN_DB_PREFIX."takepos_floor_tables DROP INDEX uk_takepos_floor_tables");
-			$this->db->query("ALTER TABLE ".MAIN_DB_PREFIX."takepos_floor_tables ADD UNIQUE INDEX uk_takepos_floor_tables(entity, floor, label)");
+		if ($alreadymigrated) {
+			return;
 		}
+
+		// Ne tente le DROP que si l'ancien index (natif TakePos) existe vraiment
+		// (site déjà migré manuellement, ou TakePos jamais utilisé).
+		$sql = "SELECT COUNT(*) as nb FROM information_schema.statistics
+				WHERE table_schema = DATABASE()
+				  AND table_name = '".MAIN_DB_PREFIX."takepos_floor_tables'
+				  AND index_name = 'uk_takepos_floor_tables'";
+		$resql = $this->db->query($sql);
+		$oldindexexists = false;
+		if ($resql) {
+			$obj = $this->db->fetch_object($resql);
+			$oldindexexists = ($obj && $obj->nb > 0);
+		}
+		if ($oldindexexists) {
+			$this->db->query("ALTER TABLE ".MAIN_DB_PREFIX."takepos_floor_tables DROP INDEX uk_takepos_floor_tables");
+		}
+		$this->db->query("ALTER TABLE ".MAIN_DB_PREFIX."takepos_floor_tables ADD UNIQUE INDEX uk_takepos_floor_tables(entity, floor, label)");
 	}
 
 	/**
@@ -250,10 +265,22 @@ class modPosFloorManager extends DolibarrModules
 		// Étapes propres à ce module : index unique + triggers. Faites en PHP
 		// (pas via le loader générique sql/) car les triggers contiennent des
 		// points-virgules internes que le loader découpe naïvement.
-		$this->migrateUniqueIndex();
-		$this->dropTriggersIfExists();
-		$this->db->query($this->getInsertTriggerSql());
-		$this->db->query($this->getUpdateTriggerSql());
+		// Protégé par try/catch : si le compte SQL n'a pas le privilège TRIGGER
+		// (hébergement mutualisé/NAS restreint) ou toute autre erreur imprévue,
+		// on affiche un message clair au lieu de laisser planter l'activation.
+		try {
+			$this->migrateUniqueIndex();
+			$this->dropTriggersIfExists();
+			$this->db->query($this->getInsertTriggerSql());
+			$this->db->query($this->getUpdateTriggerSql());
+		} catch (\Throwable $e) {
+			$this->error = "PosFloorManager: echec de la migration index/triggers (".$e->getMessage()."). Verifiez que le compte MySQL a les privileges ALTER et TRIGGER sur la base.";
+			dol_syslog(__METHOD__." ".$this->error, LOG_ERR);
+			setEventMessages($this->error, null, 'errors');
+			// On ne bloque pas l'activation du module pour autant : l'ecran
+			// natif TakePos continue de fonctionner sans la correction tant
+			// que ce point n'est pas resolu.
+		}
 
 		return $this->_init($sql, $options);
 	}

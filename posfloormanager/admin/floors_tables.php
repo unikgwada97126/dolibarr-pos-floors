@@ -6,7 +6,20 @@
  *              l'écran natif takepos/floors.php.
  */
 
-require '../../main.inc.php';
+// Le module est installé dans htdocs/custom/posfloormanager/ : depuis
+// admin/, il faut remonter 3 niveaux pour atteindre main.inc.php. Gère aussi
+// le cas d'un module posé directement sous htdocs/ (hors custom/).
+$res = 0;
+if (!$res && file_exists("../../main.inc.php")) {
+	$res = @include "../../main.inc.php";
+}
+if (!$res && file_exists("../../../main.inc.php")) {
+	$res = @include "../../../main.inc.php";
+}
+if (!$res) {
+	die("Include of main fails");
+}
+
 require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 
