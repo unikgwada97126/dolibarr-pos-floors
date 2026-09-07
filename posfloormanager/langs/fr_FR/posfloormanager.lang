@@ -45,3 +45,4 @@ PosFloorManagerConfirmRenumber=Cette action renumérote toutes les tables de cet
 PosFloorManagerFloorRenumbered=%s table(s) renumérotée(s)
 PosFloorManagerNoTableYet=Aucune table pour l'instant sur cette salle.
 PosFloorManagerNoFloorYet=Aucune salle/étage pour l'instant. Utilisez le champ ci-dessus pour en créer un.
+PosFloorManagerOutOfService=Hors service (masqué ici uniquement, reste visible en caisse)

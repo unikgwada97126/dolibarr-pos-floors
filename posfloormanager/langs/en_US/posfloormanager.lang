@@ -45,3 +45,4 @@ PosFloorManagerConfirmRenumber=This will renumber all tables of this floor from 
 PosFloorManagerFloorRenumbered=%s table(s) renumbered
 PosFloorManagerNoTableYet=No table yet on this room.
 PosFloorManagerNoFloorYet=No room/floor yet. Use the field above to create one.
+PosFloorManagerOutOfService=Out of service (this screen only, still visible on the register)
