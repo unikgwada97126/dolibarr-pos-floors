@@ -8,12 +8,12 @@ PosFloorManagerSetupDesc=This module fixes table/floor numbering of the native T
 PosFloorManagerHowItWorks=How it works: on activation, this module installs 2 triggers on the TakePos technical table (llx_takepos_floor_tables) and replaces the native global table-number uniqueness constraint with a per-floor constraint. Any table created or renamed - whether from the native TakePos screen or from this module's screen - now gets clean, sequential, per-floor numbering.
 PosFloorManagerOpenScreen=Open management screen
 
-PosFloorManagerIntro=Manage your floor/room names and table numbering here. The visual floor plan (drag and drop) is still managed from the native TakePos "Edit" screen; this screen ensures numbering stays clean wherever a table is created or renamed.
+PosFloorManagerIntro=Floors/rooms that already exist in TakePos show up automatically below (as soon as they have at least one table): nothing to recreate. Manage their name and table numbering here. The visual floor plan (drag and drop) is still managed from the native TakePos "Edit" screen; this screen ensures numbering stays clean wherever a table is created or renamed.
 
 PosFloorManagerFloorNum=Floor
 PosFloorManagerFloorName=Room name
 PosFloorManagerNbTables=Tables
-PosFloorManagerNewFloorName=New room/floor
+PosFloorManagerNewFloorName=Create a BRAND NEW floor (empty, no table yet)
 PosFloorManagerFloorNameExample=e.g. Main room, Terrace, 1st floor
 PosFloorManagerAddFloor=Create room
 PosFloorManagerFloorCreated=Room created

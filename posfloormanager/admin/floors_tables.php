@@ -82,8 +82,6 @@ function pfmCountTables($db, $floor)
  */
 function pfmTableIsOccupied($db, $tableid)
 {
-	global $conf;
-	$invoice = new Facture($db);
 	// Le terminal n'est pas connu ici (hors session caisse) : on cherche sur
 	// tous les terminaux possibles via une recherche large du ref provisoire.
 	$sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."facture";
@@ -96,24 +94,103 @@ function pfmTableIsOccupied($db, $tableid)
 	return false;
 }
 
+/**
+ * Construit la liste des étages à afficher en fusionnant 2 sources :
+ * - les étages qui existent DEJA nativement dans TakePos (dès qu'une table y
+ *   a été créée depuis l'écran natif ou celui-ci) ;
+ * - les étages personnalisés (nom/ordre/actif) enregistrés par ce module.
+ * Un étage natif sans personnalisation apparaît avec un nom par défaut
+ * ("Étage N") : aucune recréation manuelle n'est nécessaire pour le voir.
+ *
+ * @param DoliDB    $db     Handler DB
+ * @param Conf      $conf   Config Dolibarr
+ * @param Translate $langs  Langue
+ * @return array<int,array{label:string,active:int,position:int,hasmeta:bool}>
+ */
+function pfmListFloors($db, $conf, $langs)
+{
+	$floors = array();
+
+	$sql = "SELECT DISTINCT floor FROM ".MAIN_DB_PREFIX."takepos_floor_tables";
+	$sql .= " WHERE entity IN (".getEntity('takepos').")";
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$floornum = (int) $obj->floor;
+			$floors[$floornum] = array('label' => null, 'active' => 1, 'position' => $floornum, 'hasmeta' => false);
+		}
+	}
+
+	$sql = "SELECT floor, label, position, active FROM ".MAIN_DB_PREFIX."posfloormanager_salle";
+	$sql .= " WHERE entity = ".((int) $conf->entity);
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$floornum = (int) $obj->floor;
+			$floors[$floornum] = array('label' => $obj->label, 'active' => (int) $obj->active, 'position' => (int) $obj->position, 'hasmeta' => true);
+		}
+	}
+
+	foreach ($floors as $floornum => &$f) {
+		if ($f['label'] === null || $f['label'] === '') {
+			$f['label'] = $langs->trans("Floor")." ".$floornum;
+		}
+	}
+	unset($f);
+
+	uasort($floors, function ($a, $b) {
+		return $a['position'] <=> $b['position'];
+	});
+
+	return $floors;
+}
+
+/**
+ * Prochain numéro d'étage libre, en tenant compte des étages déjà présents
+ * nativement dans TakePos ET de ceux personnalisés par ce module.
+ *
+ * @param DoliDB $db    Handler DB
+ * @param Conf   $conf  Config Dolibarr
+ * @return int
+ */
+function pfmNextFreeFloor($db, $conf)
+{
+	$max = 0;
+	$sql = "SELECT MAX(floor) as m FROM ".MAIN_DB_PREFIX."takepos_floor_tables WHERE entity IN (".getEntity('takepos').")";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$obj = $db->fetch_object($resql);
+		if ($obj && $obj->m !== null) {
+			$max = max($max, (int) $obj->m);
+		}
+	}
+	$sql = "SELECT MAX(floor) as m FROM ".MAIN_DB_PREFIX."posfloormanager_salle WHERE entity = ".((int) $conf->entity);
+	$resql = $db->query($sql);
+	if ($resql) {
+		$obj = $db->fetch_object($resql);
+		if ($obj && $obj->m !== null) {
+			$max = max($max, (int) $obj->m);
+		}
+	}
+	return $max + 1;
+}
+
 
 /*
  * Actions
  */
 
 if ($action == 'addfloor' && $user->hasRight('posfloormanager', 'manage')) {
+	// Uniquement pour un étage tout NEUF (sans aucune table native existante) :
+	// les étages déjà utilisés dans TakePos apparaissent automatiquement dans
+	// la liste (pfmListFloors), inutile de les "créer" ici.
 	$newfloorname = GETPOST('newfloorname', 'alphanohtml');
 	if (empty($newfloorname)) {
 		setEventMessages($langs->trans("PosFloorManagerErrorNameRequired"), null, 'errors');
 		$error++;
 	}
 	if (!$error) {
-		$sql = "SELECT COALESCE(MAX(floor), 0) + 1 as nextfloor FROM ".MAIN_DB_PREFIX."posfloormanager_salle";
-		$sql .= " WHERE entity = ".((int) $conf->entity);
-		$resql = $db->query($sql);
-		$obj = $db->fetch_object($resql);
-		$nextfloor = $obj ? (int) $obj->nextfloor : 1;
-
+		$nextfloor = pfmNextFreeFloor($db, $conf);
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."posfloormanager_salle(entity, floor, label, position, active, date_creation)";
 		$sql .= " VALUES (".((int) $conf->entity).", ".((int) $nextfloor).", '".$db->escape($newfloorname)."', ".((int) $nextfloor).", 1, '".$db->idate(dol_now())."')";
 		if (!$db->query($sql)) {
@@ -126,11 +203,17 @@ if ($action == 'addfloor' && $user->hasRight('posfloormanager', 'manage')) {
 }
 
 if ($action == 'renamefloor' && $user->hasRight('posfloormanager', 'manage')) {
+	$floornum = GETPOSTINT('floornum');
 	if (empty($label)) {
 		setEventMessages($langs->trans("PosFloorManagerErrorNameRequired"), null, 'errors');
+	} elseif ($floornum <= 0) {
+		setEventMessages($langs->trans("Error"), null, 'errors');
 	} else {
-		$sql = "UPDATE ".MAIN_DB_PREFIX."posfloormanager_salle SET label = '".$db->escape($label)."'";
-		$sql .= " WHERE rowid = ".((int) $rowid)." AND entity = ".((int) $conf->entity);
+		// Upsert : l'étage peut déjà exister nativement dans TakePos sans
+		// jamais avoir eu de ligne de personnalisation (nom/ordre/actif) ici.
+		$sql = "INSERT INTO ".MAIN_DB_PREFIX."posfloormanager_salle(entity, floor, label, position, active, date_creation)";
+		$sql .= " VALUES (".((int) $conf->entity).", ".((int) $floornum).", '".$db->escape($label)."', ".((int) $floornum).", 1, '".$db->idate(dol_now())."')";
+		$sql .= " ON DUPLICATE KEY UPDATE label = '".$db->escape($label)."'";
 		if (!$db->query($sql)) {
 			setEventMessages($db->lasterror(), null, 'errors');
 		} else {
@@ -140,21 +223,26 @@ if ($action == 'renamefloor' && $user->hasRight('posfloormanager', 'manage')) {
 }
 
 if ($action == 'toggleactivefloor' && $user->hasRight('posfloormanager', 'manage')) {
-	$sql = "UPDATE ".MAIN_DB_PREFIX."posfloormanager_salle SET active = 1 - active";
-	$sql .= " WHERE rowid = ".((int) $rowid)." AND entity = ".((int) $conf->entity);
-	$db->query($sql);
+	$floornum = GETPOSTINT('floornum');
+	if ($floornum > 0) {
+		$defaultlabel = $langs->trans("Floor")." ".$floornum;
+		$sql = "INSERT INTO ".MAIN_DB_PREFIX."posfloormanager_salle(entity, floor, label, position, active, date_creation)";
+		$sql .= " VALUES (".((int) $conf->entity).", ".((int) $floornum).", '".$db->escape($defaultlabel)."', ".((int) $floornum).", 0, '".$db->idate(dol_now())."')";
+		$sql .= " ON DUPLICATE KEY UPDATE active = 1 - active";
+		$db->query($sql);
+	}
 }
 
 if ($action == 'deletefloor' && $user->hasRight('posfloormanager', 'manage')) {
-	$sql = "SELECT floor FROM ".MAIN_DB_PREFIX."posfloormanager_salle WHERE rowid = ".((int) $rowid)." AND entity = ".((int) $conf->entity);
-	$resql = $db->query($sql);
-	$obj = $resql ? $db->fetch_object($resql) : null;
-	if ($obj) {
-		$nbtables = pfmCountTables($db, $obj->floor);
+	$floornum = GETPOSTINT('floornum');
+	if ($floornum > 0) {
+		$nbtables = pfmCountTables($db, $floornum);
 		if ($nbtables > 0) {
 			setEventMessages($langs->trans("PosFloorManagerErrorFloorNotEmpty", $nbtables), null, 'errors');
 		} else {
-			$db->query("DELETE FROM ".MAIN_DB_PREFIX."posfloormanager_salle WHERE rowid = ".((int) $rowid));
+			// Ne supprime que la personnalisation (nom/ordre/actif) : si l'étage
+			// n'a plus aucune table, il disparaît de la liste de lui-même.
+			$db->query("DELETE FROM ".MAIN_DB_PREFIX."posfloormanager_salle WHERE entity = ".((int) $conf->entity)." AND floor = ".((int) $floornum));
 			setEventMessages($langs->trans("PosFloorManagerFloorDeleted"), null, 'mesgs');
 		}
 	}
@@ -260,10 +348,8 @@ print load_fiche_titre($langs->trans("PosFloorManagerTitle"), '', 'houses');
 
 print '<span class="opacitymedium">'.$langs->trans("PosFloorManagerIntro").'</span><br><br>';
 
-// --- Liste des salles/étages ---
-$sql = "SELECT rowid, floor, label, position, active FROM ".MAIN_DB_PREFIX."posfloormanager_salle";
-$sql .= " WHERE entity = ".((int) $conf->entity)." ORDER BY position ASC, floor ASC";
-$resql = $db->query($sql);
+// --- Liste des salles/étages : fusion auto TakePos natif + personnalisation ---
+$floors = pfmListFloors($db, $conf, $langs);
 
 print '<table class="noborder centpercent">';
 print '<tr class="liste_titre">';
@@ -274,33 +360,31 @@ print '<td class="center">'.$langs->trans("Status").'</td>';
 print '<td class="right"></td>';
 print '</tr>';
 
-if ($resql) {
-	while ($obj = $db->fetch_object($resql)) {
-		$nbtables = pfmCountTables($db, $obj->floor);
-		print '<tr class="oddeven">';
-		print '<td>'.$langs->trans("Floor").' '.((int) $obj->floor).'</td>';
-		print '<td>';
-		print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input type="hidden" name="action" value="renamefloor">';
-		print '<input type="hidden" name="rowid" value="'.((int) $obj->rowid).'">';
-		print '<input type="text" name="label" value="'.dol_escape_htmltag($obj->label).'" size="24">';
-		print ' <button type="submit" class="button smallpaddingimp">'.$langs->trans("Save").'</button>';
-		print '</form>';
-		print '</td>';
-		print '<td class="center"><a href="'.$_SERVER["PHP_SELF"].'?floor='.((int) $obj->floor).'">'.$nbtables.'</a></td>';
-		print '<td class="center">';
-		print '<a href="'.$_SERVER["PHP_SELF"].'?action=toggleactivefloor&token='.newToken().'&rowid='.((int) $obj->rowid).'">';
-		print $obj->active ? img_picto($langs->trans("Active"), 'switch_on') : img_picto($langs->trans("Disabled"), 'switch_off');
-		print '</a>';
-		print '</td>';
-		print '<td class="right">';
-		if ($nbtables == 0) {
-			print '<a href="'.$_SERVER["PHP_SELF"].'?action=deletefloor&token='.newToken().'&rowid='.((int) $obj->rowid).'" onclick="return confirm(\''.dol_escape_js($langs->trans("ConfirmDelete")).'\');">'.img_picto($langs->trans("Delete"), 'delete').'</a>';
-		}
-		print '</td>';
-		print '</tr>';
+foreach ($floors as $floornum => $f) {
+	$nbtables = pfmCountTables($db, $floornum);
+	print '<tr class="oddeven">';
+	print '<td>'.$langs->trans("Floor").' '.((int) $floornum).'</td>';
+	print '<td>';
+	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="inline-block">';
+	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="action" value="renamefloor">';
+	print '<input type="hidden" name="floornum" value="'.((int) $floornum).'">';
+	print '<input type="text" name="label" value="'.dol_escape_htmltag($f['label']).'" size="24">';
+	print ' <button type="submit" class="button smallpaddingimp">'.$langs->trans("Save").'</button>';
+	print '</form>';
+	print '</td>';
+	print '<td class="center"><a href="'.$_SERVER["PHP_SELF"].'?floor='.((int) $floornum).'">'.$nbtables.'</a></td>';
+	print '<td class="center">';
+	print '<a href="'.$_SERVER["PHP_SELF"].'?action=toggleactivefloor&token='.newToken().'&floornum='.((int) $floornum).'">';
+	print $f['active'] ? img_picto($langs->trans("Active"), 'switch_on') : img_picto($langs->trans("Disabled"), 'switch_off');
+	print '</a>';
+	print '</td>';
+	print '<td class="right">';
+	if ($nbtables == 0) {
+		print '<a href="'.$_SERVER["PHP_SELF"].'?action=deletefloor&token='.newToken().'&floornum='.((int) $floornum).'" onclick="return confirm(\''.dol_escape_js($langs->trans("ConfirmDelete")).'\');">'.img_picto($langs->trans("Delete"), 'delete').'</a>';
 	}
+	print '</td>';
+	print '</tr>';
 }
 
 print '<tr class="oddeven">';

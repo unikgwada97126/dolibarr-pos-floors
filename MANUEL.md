@@ -17,15 +17,27 @@ table : la numérotation propre par étage s'applique dans les deux cas (elle
 est garantie au niveau de la base de données, pas seulement dans l'écran du
 module).
 
-## 1. Créer une salle / un étage
+## 1. Vos salles/étages existants apparaissent automatiquement
+
+Dès que vous ouvrez **Point de vente > Salles & Tables**, tous les étages qui
+existent déjà dans TakePos (ceux qui ont au moins une table, même créée avant
+l'installation de ce module) s'affichent tout seuls dans le tableau, avec un
+nom par défaut ("Étage 1", "Étage 2"...). **Rien à recréer.**
+
+Pour leur donner un vrai nom, voir section suivante.
+
+## 1bis. Créer un TOUT NOUVEL étage (cas rare)
+
+Utile uniquement pour un étage qui n'existe pas encore du tout (aucune table
+créée nulle part, ni en natif ni ici) — par exemple avant d'ouvrir une
+nouvelle terrasse.
 
 1. Aller dans **Point de vente > Salles & Tables**.
-2. En bas du tableau "Salles/étages", saisir un nom (ex: *Terrasse*, *Salle
-   principale*, *Étage 1*) dans le champ "Nouvelle salle/étage".
+2. En bas du tableau "Salles/étages", saisir un nom dans le champ "Créer un
+   tout nouvel étage".
 3. Cliquer sur **Créer la salle**.
 
-Le numéro d'étage technique (1, 2, 3...) est attribué automatiquement — vous
-n'avez qu'à gérer le **nom**.
+Le numéro d'étage technique (1, 2, 3...) est attribué automatiquement.
 
 ## 2. Renommer une salle
 

@@ -8,12 +8,12 @@ PosFloorManagerSetupDesc=Ce module corrige la numérotation des tables et des é
 PosFloorManagerHowItWorks=Fonctionnement : à l'activation, ce module installe 2 triggers sur la table technique de TakePos (llx_takepos_floor_tables) et remplace la contrainte d'unicité globale des numéros de table par une contrainte par étage. Toute table créée ou renommée - que ce soit depuis l'écran natif TakePos (crayon "Editer" du plan de salle) ou depuis l'écran de ce module - respecte désormais une numérotation propre, séquentielle et unique PAR ÉTAGE.
 PosFloorManagerOpenScreen=Ouvrir l'écran de gestion
 
-PosFloorManagerIntro=Gérez ici le nom de vos salles/étages et la numérotation de vos tables. Le plan de salle (positionnement visuel, glisser-déposer) reste géré depuis l'écran natif TakePos ("Editer" dans le module POS) ; cet écran garantit que la numérotation reste propre quel que soit l'endroit où vous créez ou renommez une table.
+PosFloorManagerIntro=Les étages/salles qui existent déjà dans TakePos apparaissent automatiquement ci-dessous (dès qu'ils ont au moins une table) : rien à recréer. Gérez ici leur nom et la numérotation de vos tables. Le plan de salle (positionnement visuel, glisser-déposer) reste géré depuis l'écran natif TakePos ("Editer" dans le module POS) ; cet écran garantit que la numérotation reste propre quel que soit l'endroit où vous créez ou renommez une table.
 
 PosFloorManagerFloorNum=Étage
 PosFloorManagerFloorName=Nom de la salle
 PosFloorManagerNbTables=Nb tables
-PosFloorManagerNewFloorName=Nouvelle salle/étage
+PosFloorManagerNewFloorName=Créer un TOUT NOUVEL étage (vide, sans table)
 PosFloorManagerFloorNameExample=ex: Salle principale, Terrasse, Étage 1
 PosFloorManagerAddFloor=Créer la salle
 PosFloorManagerFloorCreated=Salle créée
